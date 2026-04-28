@@ -4,108 +4,48 @@
     <title>Driver Advance System</title>
 
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', sans-serif;
-        }
-
         body {
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-            padding: 30px;
+            font-family: Arial;
+            background: #f4f6f9;
+            padding: 20px;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 700px;
             margin: auto;
-            background: #fff;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
         }
 
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #333;
-        }
-
-        label {
-            font-weight: bold;
-            color: #555;
-        }
-
-        select, input {
+        input, select, button {
             width: 100%;
             padding: 10px;
-            margin: 8px 0 15px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            transition: 0.3s;
-        }
-
-        select:focus, input:focus {
-            border-color: #4facfe;
-            outline: none;
-            box-shadow: 0 0 5px rgba(79,172,254,0.5);
+            margin: 8px 0;
         }
 
         button {
-            width: 100%;
-            padding: 12px;
-            background: #4facfe;
+            background: #007bff;
             color: white;
             border: none;
-            border-radius: 6px;
-            font-size: 16px;
             cursor: pointer;
-            transition: 0.3s;
-        }
-
-        button:hover {
-            background: #007bff;
         }
 
         table {
             width: 100%;
-            margin-top: 25px;
+            margin-top: 20px;
             border-collapse: collapse;
-            overflow: hidden;
-            border-radius: 10px;
-        }
-
-        thead {
-            background: #4facfe;
-            color: white;
         }
 
         th, td {
-            padding: 12px;
+            border: 1px solid #ddd;
+            padding: 10px;
             text-align: center;
-        }
-
-        tbody tr {
-            background: #f9f9f9;
-            transition: 0.3s;
-        }
-
-        tbody tr:hover {
-            background: #eaf4ff;
         }
 
         th {
-            font-size: 14px;
-        }
-
-        td {
-            font-size: 13px;
-        }
-
-        .empty {
-            text-align: center;
-            padding: 20px;
-            color: #888;
+            background: #007bff;
+            color: white;
         }
     </style>
 </head>
@@ -114,22 +54,25 @@
 
 <div class="container">
 
-    <h2>🚚 Driver Advance Entry</h2>
+    <h2>🚚 Driver Advance System</h2>
 
-    <label>Select Driver</label>
+    <!-- ADD DRIVER -->
+    <h3>Add Driver</h3>
+    <input type="text" id="new_driver" placeholder="Enter Driver Name">
+    <button onclick="addDriver()">➕ Add Driver</button>
+
+    <!-- ADD ADVANCE -->
+    <h3>Add Advance</h3>
+
     <select id="driver_id"></select>
 
-    <label>Amount</label>
-    <input type="number" id="amount" placeholder="Enter Amount">
-
-    <label>Reason</label>
-    <input type="text" id="reason" placeholder="Enter Reason">
-
-    <label>Date</label>
+    <input type="number" id="amount" placeholder="Amount">
+    <input type="text" id="reason" placeholder="Reason">
     <input type="date" id="advance_date">
 
     <button onclick="saveAdvance()">💾 Save Advance</button>
 
+    <!-- TABLE -->
     <table>
         <thead>
             <tr>
@@ -140,26 +83,77 @@
             </tr>
         </thead>
         <tbody id="advanceBody">
-            <tr><td colspan="4" class="empty">No records yet</td></tr>
+            <tr><td colspan="4">No records yet</td></tr>
         </tbody>
     </table>
 
 </div>
 
 <script>
+
+// LOAD DRIVERS
 function loadDrivers() {
     fetch('get_drivers.php')
     .then(res => res.json())
     .then(data => {
+        console.log("Drivers:", data); // 👈 DEBUG
+
         let dropdown = document.getElementById('driver_id');
-        dropdown.innerHTML = '<option value="">-- Select Driver --</option>';
+        dropdown.innerHTML = '<option value="">Select Driver</option>';
 
         data.forEach(d => {
             dropdown.innerHTML += `<option value="${d.id}">${d.name}</option>`;
         });
-    });
+    })
+    .catch(err => console.error(err));
 }
 
+// ADD DRIVER
+function addDriver() {
+    let name = document.getElementById('new_driver').value;
+
+    if (name === "") {
+        alert("Enter driver name");
+        return;
+    }
+
+    fetch('add_driver.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name })
+    })
+    .then(res => res.text())
+    .then(data => {
+        alert(data);
+        document.getElementById('new_driver').value = "";
+        loadDrivers();
+    })
+    .catch(err => console.error(err));
+}
+
+// SAVE ADVANCE
+function saveAdvance() {
+    let data = {
+        driver_id: document.getElementById('driver_id').value,
+        amount: document.getElementById('amount').value,
+        reason: document.getElementById('reason').value,
+        advance_date: document.getElementById('advance_date').value
+    };
+
+    fetch('save_advance.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(res => {
+        alert(res.message);
+        loadAdvances();
+    })
+    .catch(err => console.error(err));
+}
+
+// LOAD ADVANCES
 function loadAdvances() {
     fetch('get_advances.php')
     .then(res => res.json())
@@ -167,7 +161,7 @@ function loadAdvances() {
         let tbody = document.getElementById("advanceBody");
 
         if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="empty">No records yet</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4">No records yet</td></tr>`;
             return;
         }
 
@@ -183,31 +177,14 @@ function loadAdvances() {
                 </tr>
             `;
         });
-    });
-}
-
-function saveAdvance() {
-    let data = {
-        driver_id: document.getElementById('driver_id').value,
-        amount: document.getElementById('amount').value,
-        reason: document.getElementById('reason').value,
-        advance_date: document.getElementById('advance_date').value
-    };
-
-    fetch('save_advance.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
     })
-    .then(res => res.json())
-    .then(res => {
-        alert(res.message);
-        loadAdvances();
-    });
+    .catch(err => console.error(err));
 }
 
+// INITIAL LOAD
 loadDrivers();
 loadAdvances();
+
 </script>
 
 </body>
